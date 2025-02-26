@@ -27,7 +27,7 @@ pest = "2.1.3"
 pest_derive = "2.7.1"
 serde = { version = "1.0.188", features = ["derive"], optional = true }
 serde_json = { version = "1.0.105", optional = true }
-simplicity-lang = { git = "https://github.com/m-kus/rust-simplicity", rev = "4148f92a26a310753ffe770454c52b726a8190fb" }
+simplicity-lang = { git = "https://github.com/m-kus/rust-simplicity", rev = "d1b8a46aaee06808a66d859edf9e2fa701b725f1", features = ["trace", "elements"]}
 miniscript = "12.2.0"
 either = "1.12.0"
 itertools = "0.13.0"
