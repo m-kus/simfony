@@ -138,7 +138,7 @@ impl CompiledProgram {
             .map_err(|e| e.to_string())?;
         let simplicity_witness = named::to_witness_node(&self.simplicity, witness_values);
         let simplicity_redeem = simplicity_witness
-            .finalize_unpruned()
+            .finalize()
             .map_err(|e| e.to_string())?;
         Ok(SatisfiedProgram {
             simplicity: simplicity_redeem,
