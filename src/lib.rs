@@ -18,6 +18,7 @@ mod serde;
 pub mod str;
 pub mod types;
 pub mod value;
+pub mod tracker;
 mod witness;
 
 use std::sync::Arc;
@@ -253,6 +254,7 @@ mod tests {
     use std::borrow::Cow;
     use std::path::Path;
 
+    use crate::tracker::Tracker;
     use crate::*;
 
     struct TestCase<T> {
@@ -394,7 +396,7 @@ mod tests {
             let pruned = self.program.redeem().prune(&env)?;
             let mut mac = BitMachine::for_program(&pruned)
                 .expect("program should be within reasonable bounds");
-            mac.exec(&pruned, &env).map(|_| ())
+            mac.exec_with_tracker(&pruned, &env, &mut Tracker).map(|_| ())
         }
 
         pub fn assert_run_success(self) {
