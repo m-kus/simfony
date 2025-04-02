@@ -16,9 +16,9 @@ pub mod pattern;
 #[cfg(feature = "serde")]
 mod serde;
 pub mod str;
+pub mod tracker;
 pub mod types;
 pub mod value;
-pub mod tracker;
 mod witness;
 
 use std::sync::Arc;
@@ -396,7 +396,8 @@ mod tests {
             let pruned = self.program.redeem().prune(&env)?;
             let mut mac = BitMachine::for_program(&pruned)
                 .expect("program should be within reasonable bounds");
-            mac.exec_with_tracker(&pruned, &env, &mut Tracker).map(|_| ())
+            mac.exec_with_tracker(&pruned, &env, &mut Tracker)
+                .map(|_| ())
         }
 
         pub fn assert_run_success(self) {
