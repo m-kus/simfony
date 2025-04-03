@@ -1,118 +1,144 @@
-use simplicity::bit_machine::ExecTracker;
-use simplicity::ffi::ffi::UWORD;
-use simplicity::jet::{Elements, Jet};
-
 use crate::jet::{source_type, target_type};
 use crate::str::AliasName;
-use crate::types::{AliasedType, TypeInner};
-use crate::ResolvedType;
+use crate::types::AliasedType;
+use crate::{ResolvedType, Value};
+use itertools::Itertools;
+use simplicity::bit_machine::ExecTracker;
+use simplicity::ffi::ffi::UWORD;
+use simplicity::jet::type_name::TypeName;
+use simplicity::jet::{Elements, Jet};
+use simplicity::{BitIter, BitIterCloseError, EarlyEndOfStreamError, Value as SimValue, ValueRef};
 
 pub struct Tracker;
 
+#[derive(Debug)]
+pub enum TrackerError {
+    UnexpectedAlias(AliasName),
+    EndOfBitStream,
+    UnexpectedEndOfBitStream(BitIterCloseError),
+    ReconstructError,
+    UnexpectedValue(SimValue),
+}
+
+impl From<EarlyEndOfStreamError> for TrackerError {
+    fn from(_: EarlyEndOfStreamError) -> Self {
+        Self::EndOfBitStream
+    }
+}
+
+impl From<BitIterCloseError> for TrackerError {
+    fn from(error: BitIterCloseError) -> Self {
+        Self::UnexpectedEndOfBitStream(error)
+    }
+}
+
 impl ExecTracker<Elements> for Tracker {
     fn track_left(&mut self, _: simplicity::Ihr) {}
+
     fn track_right(&mut self, _: simplicity::Ihr) {}
+
     fn track_jet_call(
         &mut self,
         jet: &Elements,
         input_buffer: &[UWORD],
         output_buffer: &[UWORD],
-        success: bool,
+        _: bool,
     ) {
-        let args = format_values(input_buffer, source_type(*jet));
-        let res = format_values(output_buffer, vec![target_type(*jet)]);
+        let args = parse_args(jet, input_buffer).expect("parse args");
+        let result = parse_result(jet, output_buffer).expect("parse res");
         println!(
             "{:?}({}) = {}",
             jet,
-            args.join(", "),
-            res.first().unwrap_or(
-                &(if success {
-                    "ok".to_string()
-                } else {
-                    "err".to_string()
-                })
-            )
+            args.iter().map(ToString::to_string).join(", "),
+            result
         );
     }
 }
 
-pub struct WordReader<'a> {
-    data: &'a [UWORD],
-    word_ptr: usize,
-    bit_ptr: usize,
-    eof: bool,
+/// Coverts an array of words into a bit iterator.
+/// Bits are reversed.
+fn words_into_bit_iter(words: &[UWORD]) -> BitIter<std::vec::IntoIter<u8>> {
+    let bytes_per_word = std::mem::size_of::<UWORD>();
+    let mut bytes = Vec::with_capacity(words.len() * bytes_per_word);
+    for word in words.iter().rev() {
+        for i in 0..bytes_per_word {
+            let byte: u8 = ((word >> (bytes_per_word - i - 1)) & 0xFF) as u8;
+            bytes.push(byte.reverse_bits());
+        }
+    }
+    BitIter::from(bytes.into_iter())
 }
 
-impl<'a> WordReader<'a> {
-    fn new(data: &'a [UWORD]) -> Self {
-        if data.is_empty() {
-            Self {
-                data,
-                word_ptr: 0,
-                bit_ptr: 0,
-                eof: true,
-            }
-        } else {
-            Self {
-                data,
-                word_ptr: data.len() - 1,
-                bit_ptr: 8 * std::mem::size_of::<UWORD>() - 1,
-                eof: false,
-            }
-        }
-    }
-
-    fn read_bit(&mut self) -> bool {
-        assert!(!self.eof, "eof");
-        let bit = (self.data[self.word_ptr] >> self.bit_ptr) & 1;
-        if self.bit_ptr == 0 {
-            if self.word_ptr == 0 {
-                self.eof = true;
-            } else {
-                self.word_ptr -= 1;
-                self.bit_ptr = 8 * std::mem::size_of::<UWORD>() - 1;
-            }
-        } else {
-            self.bit_ptr -= 1;
-        }
-        bit == 1
-    }
-
-    fn read_u8(&mut self) -> u8 {
-        let mut result = 0;
-        for _ in 0..8 {
-            result = (result << 1) | self.read_bit() as u8;
-        }
-        result
-    }
-}
-
-fn format_values(data: &[UWORD], types: Vec<AliasedType>) -> Vec<String> {
-    let mut reader = WordReader::new(data);
-    let mut values = Vec::new();
-
+/// Converts an aliased type to a resolved type.
+fn resolve_type(aliased_type: &AliasedType) -> Result<ResolvedType, TrackerError> {
     let get_alias = |_: &AliasName| -> Option<ResolvedType> { None };
+    aliased_type
+        .resolve(get_alias)
+        .map_err(TrackerError::UnexpectedAlias)
+}
 
-    for ty in types {
-        let resolved_type = ty.resolve(get_alias).expect("unexpected alias");
-        match resolved_type.as_inner() {
-            TypeInner::UInt(uint_type) => {
-                let mut uint_value = String::with_capacity(uint_type.byte_width() * 2 + 2);
-                uint_value.push_str("0x");
-                for _ in 0..uint_type.byte_width() {
-                    let byte = reader.read_u8();
-                    if byte > 0 {
-                        uint_value.push_str(&format!("{:x}", byte));
-                    }
-                }
-                values.push(uint_value);
-            }
-            TypeInner::Boolean => {
-                values.push(reader.read_bit().to_string());
-            }
-            _ => return data.iter().map(|word| format!("{:?}", word)).collect(),
+/// Traverses a product and collects the arguments.
+fn collect_args(
+    node: ValueRef,
+    num_args: usize,
+    args: &mut Vec<SimValue>,
+) -> Result<(), TrackerError> {
+    assert!(num_args > 0);
+    if num_args == 1 {
+        args.push(node.to_value());
+        Ok(())
+    } else {
+        if let Some((left, right)) = node.as_product() {
+            args.push(left.to_value());
+            collect_args(right, num_args - 1, args)
+        } else {
+            Err(TrackerError::UnexpectedValue(node.to_value()))
         }
     }
+}
 
-    values
+/// Parses a SimValue from an array of words.
+fn parse_sim_value(words: &[UWORD], type_name: TypeName) -> Result<SimValue, TrackerError> {
+    let sim_type = type_name.to_final();
+    let mut bit_iter = words_into_bit_iter(words);
+    let sim_value = SimValue::from_padded_bits(&mut bit_iter, &sim_type)?;
+    // TODO(m-kus): this call fails
+    //bit_iter.close()?;
+    Ok(sim_value)
+}
+
+/// Parses a Simfony value from a Simplicity value.
+fn parse_simf_value(
+    sim_value: SimValue,
+    aliased_type: &AliasedType,
+) -> Result<Value, TrackerError> {
+    let resolved_type = resolve_type(aliased_type)?;
+    let value = Value::reconstruct(&sim_value.into(), &resolved_type)
+        .ok_or(TrackerError::ReconstructError)?;
+    Ok(value)
+}
+
+/// Parses the arguments of a jet call.
+fn parse_args(jet: &Elements, words: &[UWORD]) -> Result<Vec<Value>, TrackerError> {
+    let simf_types = source_type(*jet);
+    if simf_types.len() == 0 {
+        return Ok(vec![]);
+    }
+
+    let sim_value = parse_sim_value(words, jet.source_ty())?;
+
+    let mut args = Vec::with_capacity(simf_types.len());
+    collect_args(sim_value.as_ref(), simf_types.len(), &mut args)?;
+
+    args.into_iter()
+        .zip(simf_types.iter())
+        .map(|(arg, ty)| parse_simf_value(arg, ty))
+        .collect()
+}
+
+/// Parses the result of a jet call.
+fn parse_result(jet: &Elements, words: &[UWORD]) -> Result<Value, TrackerError> {
+    let simf_type = target_type(*jet);
+    let sim_value = parse_sim_value(words, jet.target_ty())?;
+    parse_simf_value(sim_value, &simf_type)
 }
