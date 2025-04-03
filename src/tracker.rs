@@ -62,8 +62,8 @@ fn words_into_bit_iter(words: &[UWORD]) -> BitIter<std::vec::IntoIter<u8>> {
     let mut bytes = Vec::with_capacity(words.len() * bytes_per_word);
     for word in words.iter().rev() {
         for i in 0..bytes_per_word {
-            let byte: u8 = ((word >> (bytes_per_word - i - 1)) & 0xFF) as u8;
-            bytes.push(byte.reverse_bits());
+            let byte: u8 = ((word >> ((bytes_per_word - i - 1) * 8)) & 0xFF) as u8;
+            bytes.push(byte);
         }
     }
     BitIter::from(bytes.into_iter())
