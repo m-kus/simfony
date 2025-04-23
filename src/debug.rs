@@ -122,9 +122,9 @@ impl CallTracker {
     /// This holds true when the method is called on a real source file.
     /// The precondition might be broken when this method is called on random input.
     pub fn track_call(&mut self, span: Span, name: TrackedCallName) {
-        let cmr = self.next_id_cmr();
-        let _replaced = self.map.insert(span, (cmr, name));
-        self.next_id += 1;
+        // let cmr = self.next_id_cmr();
+        // let _replaced = self.map.insert(span, (cmr, name));
+        // self.next_id += 1;
     }
 
     /// Get the CMR of the tracked function call with the given `span`.
