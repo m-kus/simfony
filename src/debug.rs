@@ -13,7 +13,7 @@ use crate::value::{StructuralValue, Value};
 ///
 /// Tracking happens via CMRs that are inserted into the Simplicity target code.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct DebugSymbols(HashMap<Cmr, TrackedCall>);
+pub struct DebugSymbols(pub HashMap<Cmr, TrackedCall>);
 
 /// Intermediate representation of tracked Simfony call expressions
 /// that is mutable and that lacks information about the source file.
