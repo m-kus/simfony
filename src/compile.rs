@@ -192,14 +192,7 @@ impl Scope {
         body: &ProgNode,
         span: &S,
     ) -> Result<PairBuilder<ProgNode>, RichError> {
-        match self.call_tracker.get_cmr(span.as_ref()) {
-            Some(cmr) => {
-                let false_and_args = ProgNode::bit(self.ctx(), false).pair(args);
-                let nop_assert = ProgNode::assertl_drop(body, cmr);
-                false_and_args.comp(&nop_assert).with_span(span)
-            }
-            None => args.comp(body).with_span(span),
-        }
+        args.comp(body).with_span(span)
     }
 
     pub fn get_argument(&self, name: &WitnessName) -> &Value {
