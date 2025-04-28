@@ -22,6 +22,7 @@ mod witness;
 
 use std::sync::Arc;
 
+use simplicity::jet::elements::ElementsEnv;
 use simplicity::{jet::Elements, CommitNode, RedeemNode};
 
 pub extern crate either;
@@ -126,6 +127,23 @@ impl CompiledProgram {
         named::to_commit_node(&self.simplicity).expect("Compiled Simfony program has type 1 -> 1")
     }
 
+    pub fn satisfy_with_env(
+        &self,
+        witness_values: WitnessValues,
+        env: &ElementsEnv<Arc<elements::Transaction>>,
+    ) -> Result<SatisfiedProgram, String> {
+        witness_values
+            .is_consistent(&self.witness_types)
+            .map_err(|e| e.to_string())?;
+        let simplicity_witness = named::to_witness_node(&self.simplicity, witness_values);
+        let simplicity_redeem = simplicity_witness
+            .finalize_pruned(env)
+            .map_err(|e| e.to_string())?;
+        Ok(SatisfiedProgram {
+            simplicity: simplicity_redeem,
+            debug_symbols: self.debug_symbols.clone(),
+        })
+    }
     /// Satisfy the Simfony program with the given `witness_values`.
     ///
     /// ## Errors
@@ -133,17 +151,7 @@ impl CompiledProgram {
     /// - Witness values have a different type than declared in the Simfony program.
     /// - There are missing witness values.
     pub fn satisfy(&self, witness_values: WitnessValues) -> Result<SatisfiedProgram, String> {
-        witness_values
-            .is_consistent(&self.witness_types)
-            .map_err(|e| e.to_string())?;
-        let simplicity_witness = named::to_witness_node(&self.simplicity, witness_values);
-        let simplicity_redeem = simplicity_witness
-            .finalize_pruned(&dummy_env::dummy())
-            .map_err(|e| e.to_string())?;
-        Ok(SatisfiedProgram {
-            simplicity: simplicity_redeem,
-            debug_symbols: self.debug_symbols.clone(),
-        })
+        self.satisfy_with_env(witness_values, &dummy_env::dummy())
     }
 }
 
