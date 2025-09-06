@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Let Statements - The Simfony Programming Language</title>
+        <title>Let Statements - The SimplicityHL Programming Language</title>
 
 
         <!-- Custom HTML head -->
@@ -88,7 +88,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Types and Values</li><li class="chapter-item expanded "><a href="type.html"><strong aria-hidden="true">1.</strong> Types and Values</a></li><li class="chapter-item expanded "><a href="type_alias.html"><strong aria-hidden="true">2.</strong> Type Aliases</a></li><li class="chapter-item expanded "><a href="type_casting.html"><strong aria-hidden="true">3.</strong> Type Casting</a></li><li class="chapter-item expanded affix "><li class="part-title">Writing a Program</li><li class="chapter-item expanded "><a href="let_statement.html" class="active"><strong aria-hidden="true">4.</strong> Let Statements</a></li><li class="chapter-item expanded "><a href="match_expression.html"><strong aria-hidden="true">5.</strong> Match Expression</a></li><li class="chapter-item expanded "><a href="function.html"><strong aria-hidden="true">6.</strong> Functions</a></li><li class="chapter-item expanded "><a href="program.html"><strong aria-hidden="true">7.</strong> Programs</a></li><li class="chapter-item expanded affix "><li class="part-title">Locking and Unlocking UTXOs</li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Types and Values</li><li class="chapter-item expanded "><a href="type.html"><strong aria-hidden="true">1.</strong> Types and Values</a></li><li class="chapter-item expanded "><a href="type_alias.html"><strong aria-hidden="true">2.</strong> Type Aliases</a></li><li class="chapter-item expanded "><a href="type_casting.html"><strong aria-hidden="true">3.</strong> Type Casting</a></li><li class="chapter-item expanded affix "><li class="part-title">Writing a Program</li><li class="chapter-item expanded "><a href="let_statement.html" class="active"><strong aria-hidden="true">4.</strong> Let Statements</a></li><li class="chapter-item expanded "><a href="match_expression.html"><strong aria-hidden="true">5.</strong> Match Expression</a></li><li class="chapter-item expanded "><a href="function.html"><strong aria-hidden="true">6.</strong> Functions</a></li><li class="chapter-item expanded "><a href="program.html"><strong aria-hidden="true">7.</strong> Programs</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -141,7 +141,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The Simfony Programming Language</h1>
+                    <h1 class="menu-title">The SimplicityHL Programming Language</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -187,10 +187,10 @@ The variable is of type <code>u32</code> and it is assigned the value <code>1</c
 <span class="boring">}</span></code></pre></pre>
 <p>Variables can be assigned to the output value of any expression, such as function calls.</p>
 <h2 id="explicit-typing"><a class="header" href="#explicit-typing">Explicit typing</a></h2>
-<p>In Simfony, the type of a defined variable <strong>always</strong> has to be written.
+<p>In SimplicityHL, the type of a defined variable <strong>always</strong> has to be written.
 This is different from Rust, which has better type inference.</p>
 <h2 id="immutability"><a class="header" href="#immutability">Immutability</a></h2>
-<p>Simfony variables are <strong>always</strong> immutable.
+<p>SimplicityHL variables are <strong>always</strong> immutable.
 There are no mutable variables.</p>
 <h2 id="redefinition-and-scoping"><a class="header" href="#redefinition-and-scoping">Redefinition and scoping</a></h2>
 <p>The same variable can be defined twice in the same scope.
@@ -213,7 +213,7 @@ let z: u32 = {
     assert!(jet::eq_32(y, 2)); // y == 2
     x
 };
-assert!(jet::eq_32(x, 3)); // z == 3
+assert!(jet::eq_32(z, 3)); // z == 3
 <span class="boring">}</span></code></pre></pre>
 <h2 id="pattern-matching"><a class="header" href="#pattern-matching">Pattern matching</a></h2>
 <p>There is limited pattern matching support inside let statements.</p>
